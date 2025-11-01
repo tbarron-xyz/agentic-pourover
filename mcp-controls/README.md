@@ -1,29 +1,46 @@
 # mcp-controls MCP Server
 
-A Model Context Protocol server
+A Model Context Protocol server for physical control systems
 
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
+This is a TypeScript-based MCP server that implements a control system for liquid dispensing and camera operations. It provides tools for:
 
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
+- Controlling valve positions for liquid dispensing
+- Capturing and retrieving camera images
+- Tracking total liquid dispensed
+- Time-based operations
 
 ## Features
 
-### Resources
-- List and access notes via `note://` URIs
-- Each note has a title, content and metadata
-- Plain text mime type for simple content access
-
 ### Tools
-- `create_note` - Create new text notes
-  - Takes title and content as required parameters
-  - Stores note in server state
+- `getImage` - Get current image from the camera
+  - Returns sequential images (dry.jpg, wet.jpg, left.jpg, right.jpg, top.jpg, bottom2.jpg)
+  - Provides base64-encoded image data with JPEG format
 
-### Prompts
-- `summarize_notes` - Generate a summary of all stored notes
-  - Includes all note contents as embedded resources
-  - Returns structured prompt for LLM summarization
+- Valve Control Tools:
+  - `openLeftValve` - Open left valve and dispense specified mL
+  - `openRightValve` - Open right valve and dispense specified mL  
+  - `openTopValve` - Open top valve and dispense specified mL
+  - `openBottomValve` - Open bottom valve and dispense specified mL
+  - `openCenterValve` - Open center valve and dispense specified mL
+  - All valve tools require:
+    - `mL` (number): Milliliters to dispense
+    - `reason` (string): Why are you taking this action?
+
+- `time_wait` - Wait for specified number of seconds
+  - Takes `n_seconds` parameter for duration
+
+- `getDispensed` - Get the total amount of liquid dispensed
+  - Returns cumulative total in milliliters
+
+## Architecture
+
+This MCP server uses HTTP-based communication via Express.js with the StreamableHTTPServerTransport. It runs as a web server that handles MCP protocol requests over HTTP rather than stdio.
+
+### Server Configuration
+- Default port: 3003 (configurable via `--mcpPort` argument)
+- Endpoint: `/mcp` for POST, GET, and DELETE requests
+- Session-based transport management
+- Supports server-to-client notifications via Server-Sent Events
 
 ## Development
 
@@ -53,18 +70,9 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 {
   "mcpServers": {
     "mcp-controls": {
-      "command": "/path/to/mcp-controls/build/index.js"
+      "command": "node",
+      "args": ["/path/to/mcp-controls/build/index.js", "--mcpPort", "3003"]
     }
   }
 }
 ```
-
-### Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
-
-```bash
-npm run inspector
-```
-
-The Inspector will provide a URL to access debugging tools in your browser.
